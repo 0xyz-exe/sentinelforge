@@ -1,7 +1,11 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
+import { mkdirSync } from 'fs';
 
-const dbPath = join(process.cwd(), 'data', 'sentinelforge.db');
+const dataDir = join(process.cwd(), 'data');
+mkdirSync(dataDir, { recursive: true });
+
+const dbPath = join(dataDir, 'sentinelforge.db');
 const db = new Database(dbPath);
 
 // Schema migration
