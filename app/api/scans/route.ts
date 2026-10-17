@@ -44,7 +44,9 @@ async function runScan(scanId: string, scanner: string, project: any) {
     let findings: any[] = [];
 
     if (scanner === 'npm_audit' && project.repo_path) {
+      console.log('[SCAN]', scanId, 'Running npm audit in', project.repo_path);
       findings = await runNpmAudit(project.repo_path);
+      console.log('[SCAN]', scanId, 'Found', findings.length, 'findings');
     } else if (scanner === 'semgrep' && project.repo_path) {
       findings = await runSemgrep(project.repo_path);
     }
@@ -71,6 +73,7 @@ async function runScan(scanId: string, scanner: string, project: any) {
       WHERE id = ?
     `).run('completed', timestamp(), 0, scanId);
   } catch (error) {
+    console.error('[SCAN]', scanId, 'Error:', error);
     db.prepare(`
       UPDATE scans SET status = ?, completed_at = ?
       WHERE id = ?
@@ -80,20 +83,35 @@ async function runScan(scanId: string, scanner: string, project: any) {
 
 async function runNpmAudit(repoPath: string): Promise<any[]> {
   try {
-    const { stdout } = await execFileAsync('npm', ['audit', '--json'], {
-      cwd: repoPath,
-      timeout: 60000
-    });
+    // npm audit returns non-zero with vulnerabilities, catch both
+    let stdout = '';
+    try {
+      const result = await execFileAsync('npm', ['audit', '--json'], {
+        cwd: repoPath,
+        timeout: 60000
+      });
+      stdout = result.stdout;
+    } catch (error: any) {
+      // npm audit exits 1 when vulnerabilities found
+      if (error.stdout) {
+        stdout = error.stdout;
+      } else {
+        throw error;
+      }
+    }
     
     const result = JSON.parse(stdout);
     const findings: any[] = [];
 
     if (result.vulnerabilities) {
       for (const [pkg, vuln] of Object.entries(result.vulnerabilities as any)) {
+        const via = Array.isArray(vuln.via) ? vuln.via[0] : vuln.via;
+        const viaObj = typeof via === 'object' ? via : null;
+        
         findings.push({
-          ruleId: vuln.via?.[0]?.source || 'UNKNOWN',
-          title: `${pkg}: ${vuln.via?.[0]?.title || 'Vulnerability'}`,
-          description: vuln.via?.[0]?.url || '',
+          ruleId: viaObj?.source?.toString() || 'UNKNOWN',
+          title: `${pkg}: ${viaObj?.title || vuln.severity || 'Vulnerability'}`,
+          description: viaObj?.url || '',
           severity: mapSeverity(vuln.severity),
           confidence: 'high',
           evidence: `Package: ${pkg}, Range: ${vuln.range}`,
