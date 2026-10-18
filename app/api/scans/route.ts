@@ -3,9 +3,46 @@ import db from '@/lib/db';
 import { cuid, timestamp } from '@/lib/utils';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { join } from 'path';
 
 const execFileAsync = promisify(execFile);
+
+interface ProjectRecord {
+  id: string;
+  repo_path: string | null;
+}
+
+interface FindingRecord {
+  ruleId?: string;
+  title: string;
+  description?: string;
+  severity: string;
+  confidence?: string;
+  filePath?: string;
+  lineNumber?: number;
+  evidence?: string;
+}
+
+interface NpmAuditVulnerability {
+  via: unknown;
+  severity: string;
+  range?: string;
+}
+
+interface NpmAuditResult {
+  vulnerabilities?: Record<string, NpmAuditVulnerability>;
+}
+
+interface SemgrepResult {
+  check_id: string;
+  path?: string;
+  start?: { line?: number };
+  extra?: {
+    message?: string;
+    metadata?: { message?: string };
+    severity?: string;
+    lines?: string;
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
-    if (!project) {
+    if (!isProjectRecord(project)) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
@@ -32,16 +69,14 @@ export async function POST(req: NextRequest) {
     runScan(scanId, scanner, project).catch(console.error);
 
     return NextResponse.json({ scanId, status: 'running' }, { status: 202 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to start scan' }, { status: 500 });
   }
 }
 
-async function runScan(scanId: string, scanner: string, project: any) {
-  const startTime = timestamp();
-  
+async function runScan(scanId: string, scanner: string, project: ProjectRecord) {
   try {
-    let findings: any[] = [];
+    let findings: FindingRecord[] = [];
 
     if (scanner === 'npm_audit' && project.repo_path) {
       console.log('[SCAN]', scanId, 'Running npm audit in', project.repo_path);
@@ -81,7 +116,7 @@ async function runScan(scanId: string, scanner: string, project: any) {
   }
 }
 
-async function runNpmAudit(repoPath: string): Promise<any[]> {
+async function runNpmAudit(repoPath: string): Promise<FindingRecord[]> {
   try {
     // npm audit returns non-zero with vulnerabilities, catch both
     let stdout = '';
@@ -91,22 +126,22 @@ async function runNpmAudit(repoPath: string): Promise<any[]> {
         timeout: 60000
       });
       stdout = result.stdout;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // npm audit exits 1 when vulnerabilities found
-      if (error.stdout) {
+      if (isExecFileError(error) && error.stdout) {
         stdout = error.stdout;
       } else {
         throw error;
       }
     }
     
-    const result = JSON.parse(stdout);
-    const findings: any[] = [];
+    const result: NpmAuditResult = JSON.parse(stdout);
+    const findings: FindingRecord[] = [];
 
     if (result.vulnerabilities) {
-      for (const [pkg, vuln] of Object.entries(result.vulnerabilities as any)) {
+      for (const [pkg, vuln] of Object.entries(result.vulnerabilities)) {
         const via = Array.isArray(vuln.via) ? vuln.via[0] : vuln.via;
-        const viaObj = typeof via === 'object' ? via : null;
+        const viaObj = isNpmAuditAdvisory(via) ? via : null;
         
         findings.push({
           ruleId: viaObj?.source?.toString() || 'UNKNOWN',
@@ -120,12 +155,12 @@ async function runNpmAudit(repoPath: string): Promise<any[]> {
     }
 
     return findings;
-  } catch (error) {
+  } catch {
     return [];
   }
 }
 
-async function runSemgrep(repoPath: string): Promise<any[]> {
+async function runSemgrep(repoPath: string): Promise<FindingRecord[]> {
   try {
     const { stdout } = await execFileAsync('semgrep', [
       '--config=auto',
@@ -133,8 +168,8 @@ async function runSemgrep(repoPath: string): Promise<any[]> {
       repoPath
     ], { timeout: 120000 });
 
-    const result = JSON.parse(stdout);
-    return (result.results || []).map((r: any) => ({
+    const result: { results?: SemgrepResult[] } = JSON.parse(stdout);
+    return (result.results || []).map((r) => ({
       ruleId: r.check_id,
       title: r.extra?.message || r.check_id,
       description: r.extra?.metadata?.message || '',
@@ -144,9 +179,36 @@ async function runSemgrep(repoPath: string): Promise<any[]> {
       lineNumber: r.start?.line,
       evidence: r.extra?.lines,
     }));
-  } catch (error) {
+  } catch {
     return [];
   }
+}
+
+function isNpmAuditAdvisory(value: unknown): value is {
+  source?: string | number;
+  title?: string;
+  url?: string;
+} {
+  return typeof value === 'object' && value !== null;
+}
+
+function isProjectRecord(value: unknown): value is ProjectRecord {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'id') === 'string' &&
+    (typeof Reflect.get(value, 'repo_path') === 'string' ||
+      Reflect.get(value, 'repo_path') === null)
+  );
+}
+
+function isExecFileError(value: unknown): value is { stdout?: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (typeof Reflect.get(value, 'stdout') === 'string' ||
+      typeof Reflect.get(value, 'stdout') === 'undefined')
+  );
 }
 
 function mapSeverity(s: string): string {

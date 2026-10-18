@@ -14,7 +14,7 @@ export async function GET(
 
     const findings = db.prepare('SELECT * FROM findings WHERE scan_id = ?').all(id);
     return NextResponse.json({ scan, findings });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch scan' }, { status: 500 });
   }
 }

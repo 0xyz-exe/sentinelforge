@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const projects = db.prepare('SELECT * FROM projects ORDER BY created_at DESC').all();
     return NextResponse.json({ projects });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
   }
 }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     return NextResponse.json({ project }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }

@@ -1,8 +1,16 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+interface ScannerInfo {
+  available: boolean;
+  version: string | null;
+}
+
+type Scanners = Record<string, ScannerInfo>;
+
 export default function ScannersPage() {
-  const [scanners, setScanners] = useState<any>(null);
+  const [scanners, setScanners] = useState<Scanners | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +32,7 @@ export default function ScannersPage() {
       </header>
 
       <div className="border border-zinc-800 rounded-lg divide-y divide-zinc-800">
-        {Object.entries(scanners || {}).map(([name, info]: [string, any]) => (
+        {Object.entries(scanners || {}).map(([name, info]) => (
           <div key={name} className="p-4 flex justify-between items-center">
             <div>
               <div className="font-semibold">{name}</div>
@@ -38,7 +46,7 @@ export default function ScannersPage() {
       </div>
 
       <div className="mt-6">
-        <a href="/" className="text-blue-400 hover:underline">&larr; Back to Dashboard</a>
+        <Link href="/" className="text-blue-400 hover:underline">&larr; Back to Dashboard</Link>
       </div>
     </div>
   );

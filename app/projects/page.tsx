@@ -1,8 +1,16 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  repo_path: string | null;
+}
+
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', repoPath: '', baseUrl: '' });
@@ -111,7 +119,7 @@ export default function ProjectsPage() {
       )}
 
       <div className="mt-6">
-        <a href="/" className="text-blue-400 hover:underline">&larr; Back to Dashboard</a>
+        <Link href="/" className="text-blue-400 hover:underline">&larr; Back to Dashboard</Link>
       </div>
     </div>
   );
