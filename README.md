@@ -2,6 +2,22 @@
 
 Open-Source Application Security Lab
 
+Repository: https://github.com/0xyz-exe/sentinelforge
+
+## Screenshots
+
+### Security Metrics Dashboard
+![Security dashboard](docs/screenshots/01_dashboard.png)
+
+### Finding Management & Triage
+![Findings](docs/screenshots/02_findings.png)
+
+### Project Scanner Configuration
+![Scanner configuration](docs/screenshots/03_project_scanners.png)
+
+### Security Scan Reports & Remediation
+![Scan reports](docs/screenshots/04_reports.png)
+
 ## Overview
 
 SentinelForge helps developers assess application security, reproduce vulnerabilities in isolated labs, understand findings, verify fixes, and generate actionable reports.
