@@ -6,17 +6,25 @@ Repository: https://github.com/0xyz-exe/sentinelforge
 
 ## Screenshots
 
-### Security Metrics Dashboard
-![Security dashboard](docs/screenshots/01_dashboard.png)
+### 1. Security Metrics Dashboard
+Tampilan dashboard telemetri keamanan sentral menyajikan ringkasan metrik postur kerentanan multi-proyek secara real-time, mencakup total target yang terdaftar lintas lingkungan (Production, Staging, Development), rasio penyelesaian pemindaian (100% pass rate), penghitung temuan aktif yang diklasifikasikan berdasarkan standar CVSS v3.1 (Critical, High, Medium, Low), serta status kesiapan engine scanner inti seperti Semgrep SAST, npm audit, Gitleaks, dan OWASP ZAP container lab.
 
-### Finding Management & Triage
-![Findings](docs/screenshots/02_findings.png)
+![Security Metrics Dashboard](docs/screenshots/01_dashboard.png)
 
-### Project Scanner Configuration
-![Scanner configuration](docs/screenshots/03_project_scanners.png)
+### 2. Finding Management & Triage
+Antarmuka triase dan penelusuran kerentanan mendalam menampilkan katalog temuan keamanan lengkap dengan badge keparahan berkode warna, klasifikasi kelemahan CWE (seperti CWE-89 SQL Injection dan CWE-347 JWT algorithm none), jalur file serta nomor baris yang terdampak, cuplikan kode bukti kerentanan (*evidence snippet*), rekomendasi remediasi kode yang dapat langsung diterapkan (*actionable remediation*), serta tombol aksi penyesuaian status investigasi.
 
-### Security Scan Reports & Remediation
-![Scan reports](docs/screenshots/04_reports.png)
+![Finding Management & Triage](docs/screenshots/02_findings.png)
+
+### 3. Project Scanner Configuration
+Formulir konfigurasi profil proyek dan scanner terintegrasi memfasilitasi pendaftaran target aplikasi baru dengan validasi ketat isolasi lokal, pengaturan lingkungan *deployment*, spesifikasi path repositori lokal untuk analisis statis SAST, endpoint base URL untuk pengujian penetrasi DAST, serta seleksi modular modul adapter scanner yang aktif untuk automasi pipeline audit keamanan.
+
+![Project Scanner Configuration](docs/screenshots/03_project_scanners.png)
+
+### 4. Security Scan Reports & Remediation
+Laporan audit komprehensif pasca-pemindaian menyajikan ringkasan eksekutif kepatuhan dan skor risiko keamanan, durasi eksekusi engine pemindaian, rincian metadata run audit, distribusi tingkat keparahan temuan, serta panduan komparasi kode langkah-demi-langkah (*remediation playbook*) yang membedakan secara kontras antara pola kode rentan dengan kode perbaikan aman yang terverifikasi.
+
+![Security Scan Reports & Remediation](docs/screenshots/04_reports.png)
 
 ## Overview
 
